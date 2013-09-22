@@ -63,10 +63,14 @@ var drawline=function(startx,starty,length,angle,color)//draws a line with the g
 		//grad.addColorStop(1, color2);
 
 	ctx.strokeStyle = color;
+	ctx.shadowColor = color;
+      ctx.shadowBlur = 40;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
 	ctx.beginPath();
 	ctx.moveTo(startx,starty);
 	ctx.lineCap="round";
-	ctx.lineWidth=12;
+	ctx.lineWidth=7;
 	ctx.lineTo(startx+cos(angle)*length,starty-sin(angle)*length);
     ctx.stroke();
     var end={
@@ -94,7 +98,6 @@ var line=Class.extend({
 	 speed:8,
 	 endreached:false,
 	 interval:null,
-	 arrayarrayindex:0,
 	 endx:0,
 	 endy:0,
 	 linecolor:0,
@@ -105,8 +108,8 @@ var line=Class.extend({
 	 {
 	 	this.angle=newang;
 	 },
-	init:function(constructor,arrayindex){
-		if(!constructor)
+	init:function(constructor){
+		if(!constructor)//for first time we want it to be created at random or at a specific point
 		{
 	this.startx=canvasw;//Math.random()*canvasw>>0;
 	this.starty=canvash;//Math.random()*canvash>>0;
@@ -133,13 +136,22 @@ var line=Class.extend({
   //	alert("sdf");
 	},
   
-	 draw:function(){
+	 draw:function(){//draw function will draw the next frame of animation of a this line object
 	//alert(this.starty);
 	//ctx.clearRect(0,0,canvas.width,canvas.height);
     //console.log(this.startx,this.starty,this.length,this.angle,this.angle/180*$pi,this.arrayindex);
 	var end;
-	this.safex=this.endx;
+	this.safex=this.endx;//these are to avoid trapping condition,new line has to be created at a point which is not an end condition,safex and safey will store the latest safe position
 	this.safey=this.endy;
+	//endreached variable are used to detect whether the line has encountered a boundary condition
+	//startxa and starty are the back side of the line. we will check the endx and endy at each frame for boundary condition
+	//if boundary condition has reached we will make end reached as true
+	//there are basically three types of animation
+	//1) it will grow till maxlength is reached, fixed start there, length will change
+	//2) it will translate, fixed length there, start will change
+	//3) it will end, length and start will change
+	//a forth special case is there where end will reach even before line grows to max length
+	//there we are waiting till what it would have taken to complete but with out changing anu=y values
 	if(this.endreached&&(this.linelength<this.maxlength))
 	{
 		if(!this.earlylimit)
@@ -202,7 +214,7 @@ var line=Class.extend({
 			linecolor:this.linecolor
 			}
 		}
-		var line1=new line(constructor,this.arrayindex);
+		var line1=new line(constructor);
 		lineobjects.push(line1);
 		//console.log(getindex(line1));
 		//console.log("*****"+this.arrayindex);
@@ -219,7 +231,7 @@ var line=Class.extend({
 		line1.animate();
 		lineobjects[i]=line1;*/
 
-	}
+	}//removes the line from array once the start also reaches the end condition,make sure it comes after the end has reached the end condition(using endreached flag)
 }
 })
 var animate=function()
@@ -230,6 +242,10 @@ var animate=function()
 	// decrease the alpha property to create more prominent trails
 	ctx.globalAlpha=.15;
 	ctx.fillStyle = '#e7e7e7';
+	ctx.shadowColor = 'white';
+	ctx.shadowBlur = 0;
+	ctx.shadowOffsetX = 0;
+	ctx.shadowOffsetY = 0;
 	ctx.fillRect( 0, 0, canvasw, canvash );
 	ctx.globalAlpha=.9;
 	// change the composite operation back to our main mode
@@ -278,7 +294,6 @@ for(i=0;i<6;i++)
  var line1=new line(null,i);
  lineobjects.push(line1);
 }
-ctx.lineWidth=5;
 	requestAnimFrame(animate);
 }
 gameloop();
