@@ -7,8 +7,8 @@ var canvash=canvas.height;
 $cos=Math.cos;
 $sin=Math.sin;
 $pi=Math.PI;
-var colorsarray=["#ec483b","#046678","#48274f","#020229","#a20b2e","#3a9c61"]
-var lineobjects=[];
+var colorsarray=["#ec483b","#046678","#48274f","#020229","#a20b2e","#3a9c61"];//line colors are selected from this array
+var lineobjects=[];//stores all line objects
 
 // requestAnim shim layer by Paul Irish
     window.requestAnimFrame = (function(){
@@ -39,7 +39,7 @@ var sin=function(angle)
 {
 return $sin(angle/180*$pi);
 }
-var drawline=function(startx,starty,length,angle,color)
+var drawline=function(startx,starty,length,angle,color)//draws a line with the given parameters
 {
 	/*var r = Math.random()*255>>0;
 	var g = Math.random()*255>>0;
@@ -74,7 +74,7 @@ var drawline=function(startx,starty,length,angle,color)
     	y:starty-sin(angle)*length
     }
     return end;
-}
+}//returns the end position of the drawn line
 var endcondition=function(x,y)
 {
 	if(x<0 || x>canvasw)
@@ -83,7 +83,8 @@ var endcondition=function(x,y)
 		return 2;
 	else if(((x-canvasw/2)*(x-canvasw/2)+(y-canvash/2)*(y-canvash/2))<225*225)
 		return 3;
-}
+}//conditions for reflection
+//for reflection we are ending the animation of the current line and we make a new line with the reflected angle
 var line=Class.extend({
 	 startx:0,
 	 starty:0,
@@ -98,6 +99,8 @@ var line=Class.extend({
 	 endy:0,
 	 linecolor:0,
 	 earlylimit:null,
+	 safex:null,
+	 safey:null,
 	 changeangle:function(newang)
 	 {
 	 	this.angle=newang;
@@ -105,11 +108,10 @@ var line=Class.extend({
 	init:function(constructor,arrayindex){
 		if(!constructor)
 		{
-	this.startx=canvasw-6;//Math.random()*canvasw>>0;
-	this.starty=canvash-6;//Math.random()*canvash>>0;
+	this.startx=canvasw;//Math.random()*canvasw>>0;
+	this.starty=canvash;//Math.random()*canvash>>0;
 	//this.linelength=Math.random()*20+20;
 	this.angle=Math.random()*360;
-	this.arrayindex=arrayindex;
 	/*var r = Math.random()*255>>0;
 	var g = Math.random()*255>>0;
 	var b = Math.random()*255>>0;
@@ -136,6 +138,8 @@ var line=Class.extend({
 	//ctx.clearRect(0,0,canvas.width,canvas.height);
     //console.log(this.startx,this.starty,this.length,this.angle,this.angle/180*$pi,this.arrayindex);
 	var end;
+	this.safex=this.endx;
+	this.safey=this.endy;
 	if(this.endreached&&(this.linelength<this.maxlength))
 	{
 		if(!this.earlylimit)
@@ -172,8 +176,8 @@ var line=Class.extend({
 		if(endstate==1)
 		{
 		var constructor={
-			startx:end.x,
-			starty:end.y,
+			startx:this.safex,
+			starty:this.safey,
 			angle:180-this.angle,
 			linecolor:this.linecolor
 		}
@@ -181,8 +185,8 @@ var line=Class.extend({
 		else if(endstate==2)
 		{
 			var constructor={
-			startx:end.x,
-			starty:end.y,
+			startx:this.safex,
+			starty:this.safey,
 			angle:360-this.angle,
 			linecolor:this.linecolor
 		}
@@ -192,8 +196,8 @@ var line=Class.extend({
 			var tangentangle=Math.atan2(canvasw/2-end.x,canvash/2-end.y)/$pi*180;
 			var constructor=
 			{
-				startx:end.x,
-			starty:end.y,
+				startx:this.safex,
+			starty:this.safey,
 			angle:2*tangentangle-this.angle,
 			linecolor:this.linecolor
 			}
