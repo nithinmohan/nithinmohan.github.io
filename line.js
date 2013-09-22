@@ -1,12 +1,13 @@
 var canvas=$("#canvas")[0];
-var ctx=canvas.getContext('2d');
 canvas.width=$(window).width();
 canvas.height=$(window).height();
+var ctx=canvas.getContext('2d');
 var canvasw=canvas.width;
 var canvash=canvas.height;
 $cos=Math.cos;
 $sin=Math.sin;
 $pi=Math.PI;
+var colorsarray=["#ec483b","#046678","#48274f","#020229","#a20b2e","#3a9c61"]
 var lineobjects=[];
 
 // requestAnim shim layer by Paul Irish
@@ -65,7 +66,7 @@ var drawline=function(startx,starty,length,angle,color)
 	ctx.beginPath();
 	ctx.moveTo(startx,starty);
 	ctx.lineCap="round";
-	ctx.lineWidth=20;
+	ctx.lineWidth=12;
 	ctx.lineTo(startx+cos(angle)*length,starty-sin(angle)*length);
     ctx.stroke();
     var end={
@@ -80,8 +81,8 @@ var endcondition=function(x,y)
 		return 1;
 	else if(y<0 || y>canvash)
 		return 2;
-	/*else if(x*x+y*y<60000)
-		return 4;*/
+	else if(((x-canvasw/2)*(x-canvasw/2)+(y-canvash/2)*(y-canvash/2))<225*225)
+		return 3;
 }
 var line=Class.extend({
 	 startx:0,
@@ -89,13 +90,14 @@ var line=Class.extend({
 	 linelength:0,
 	 angle:0,
 	 maxlength:60,
-	 speed:6,
+	 speed:8,
 	 endreached:false,
 	 interval:null,
 	 arrayarrayindex:0,
 	 endx:0,
 	 endy:0,
 	 linecolor:0,
+	 earlylimit:null,
 	 changeangle:function(newang)
 	 {
 	 	this.angle=newang;
@@ -103,16 +105,17 @@ var line=Class.extend({
 	init:function(constructor,arrayindex){
 		if(!constructor)
 		{
-	this.startx=canvasw/2;//Math.random()*canvasw>>0;
-	this.starty=canvash/2;//Math.random()*canvash>>0;
+	this.startx=canvasw-6;//Math.random()*canvasw>>0;
+	this.starty=canvash-6;//Math.random()*canvash>>0;
 	//this.linelength=Math.random()*20+20;
 	this.angle=Math.random()*360;
 	this.arrayindex=arrayindex;
-	var r = Math.random()*255>>0;
+	/*var r = Math.random()*255>>0;
 	var g = Math.random()*255>>0;
 	var b = Math.random()*255>>0;
-	var p = "rgba("+r+", "+g+", "+b+", 1)";
-	this.linecolor=p;
+	var p = "rgba("+r+", "+g+", "+b+", 1)";*/
+	//var p=Math.random()*6>>0;
+	this.linecolor=colorsarray.pop();
 	}
 	else
 	{
@@ -133,10 +136,19 @@ var line=Class.extend({
 	//ctx.clearRect(0,0,canvas.width,canvas.height);
     //console.log(this.startx,this.starty,this.length,this.angle,this.angle/180*$pi,this.arrayindex);
 	var end;
-	if(this.endreached)
+	if(this.endreached&&(this.linelength<this.maxlength))
 	{
+		if(!this.earlylimit)
+		{
+			this.earlylimit=this.linelength;
+		}
 		this.startx+=cos(this.angle)*this.speed;
 		this.starty-=sin(this.angle)*this.speed;
+		this.linelength-=this.speed;
+		end=drawline(this.startx,this.starty,this.earlylimit,this.angle,this.linecolor);
+	}
+	else if(this.endreached&&(this.linelength>=this.maxlength))
+	{
 		this.linelength-=this.speed;
 		end=drawline(this.startx,this.starty,this.linelength,this.angle,this.linecolor);
 	}
@@ -177,7 +189,7 @@ var line=Class.extend({
 		}
 		else if(endstate==3)
 		{
-			var tangentangle=Math.atan2(end.x,end.y)/$pi*180;
+			var tangentangle=Math.atan2(canvasw/2-end.x,canvash/2-end.y)/$pi*180;
 			var constructor=
 			{
 				startx:end.x,
@@ -210,10 +222,12 @@ var animate=function()
 {
 	requestAnimFrame(animate);
 	//\ctx.clearRect(0,0,canvas.width,canvas.height);
-	//ctx.globalCompositeOperation = 'destination-out';
+	ctx.globalCompositeOperation = 'source-over';
 	// decrease the alpha property to create more prominent trails
-	ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+	ctx.globalAlpha=.15;
+	ctx.fillStyle = '#e7e7e7';
 	ctx.fillRect( 0, 0, canvasw, canvash );
+	ctx.globalAlpha=.9;
 	// change the composite operation back to our main mode
 	// lighter creates bright highlight points as the fireworks and particles overlap each other
 	//ctx.globalCompositeOperation = 'lighter';
@@ -255,7 +269,7 @@ $('body').click(function(e){
 })*/
 var gameloop=function()
 {
-for(i=0;i<600;i++)
+for(i=0;i<6;i++)
 {
  var line1=new line(null,i);
  lineobjects.push(line1);
