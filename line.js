@@ -1,12 +1,35 @@
 var canvas=$("#canvas")[0];
 var ctx=canvas.getContext('2d');
-var windowx=$("#canvas").width();
-var windowy=$("#canvas").height();
+canvas.width=$(window).width();
+canvas.height=$(window).height();
+var canvasw=canvas.width;
+var canvash=canvas.height;
 $cos=Math.cos;
 $sin=Math.sin;
 $pi=Math.PI;
-var lineobjects={};
+var lineobjects=[];
 
+// requestAnim shim layer by Paul Irish
+    window.requestAnimFrame = (function(){
+      return  window.requestAnimationFrame       || 
+              window.webkitRequestAnimationFrame || 
+              window.mozRequestAnimationFrame    || 
+              window.oRequestAnimationFrame      || 
+              window.msRequestAnimationFrame     || 
+              function(/* function */ callback, /* DOMElement */ element){
+                window.setTimeout(callback, 1000 / 60);
+              };
+    })();
+var getindex=function(line)
+{
+	var i=0;
+	for(var a in lineobjects)
+	{
+		if(lineobjects[a]==line)
+			return i;
+		i++;
+	}
+}
 var cos=function(angle)
 {
 return $cos(angle/180*$pi);
@@ -15,10 +38,34 @@ var sin=function(angle)
 {
 return $sin(angle/180*$pi);
 }
-var drawline=function(startx,starty,length,angle)
+var drawline=function(startx,starty,length,angle,color)
 {
+	/*var r = Math.random()*255>>0;
+	var g = Math.random()*255>>0;
+	var b = Math.random()*255>>0;
+	p = "rgba("+r+", "+g+", "+b+", 0.5)";
+	var gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius);
+		gradient.addColorStop(0, "white");
+		gradient.addColorStop(0.4, "white");
+		gradient.addColorStop(0.4, p);
+		gradient.addColorStop(1, "black");
+		
+		ctx.fillStyle = gradient;*/
+		/*var grad= ctx.createLinearGradient(startx,starty,startx+cos(angle)*length,starty-sin(angle)*length);
+		grad.addColorStop(0, color1);
+		grad.addColorStop(0.5, color1);
+		//grad.addColorStop(0.2, "");
+		/*
+		grad.addColorStop(0.4, "yellow");
+		grad.addColorStop(0.6, "pink");
+		grad.addColorStop(0.8, "violet");*/
+		//grad.addColorStop(1, color2);
+
+	ctx.strokeStyle = color;
 	ctx.beginPath();
 	ctx.moveTo(startx,starty);
+	ctx.lineCap="round";
+	ctx.lineWidth=20;
 	ctx.lineTo(startx+cos(angle)*length,starty-sin(angle)*length);
     ctx.stroke();
     var end={
@@ -29,10 +76,12 @@ var drawline=function(startx,starty,length,angle)
 }
 var endcondition=function(x,y)
 {
-	if(x<0 || x>302)
+	if(x<0 || x>canvasw)
 		return 1;
-	else if(y<0 || y>152)
+	else if(y<0 || y>canvash)
 		return 2;
+	/*else if(x*x+y*y<60000)
+		return 4;*/
 }
 var line=Class.extend({
 	 startx:0,
@@ -40,18 +89,30 @@ var line=Class.extend({
 	 linelength:0,
 	 angle:0,
 	 maxlength:60,
-	 speed:2,
+	 speed:6,
 	 endreached:false,
 	 interval:null,
 	 arrayarrayindex:0,
+	 endx:0,
+	 endy:0,
+	 linecolor:0,
+	 changeangle:function(newang)
+	 {
+	 	this.angle=newang;
+	 },
 	init:function(constructor,arrayindex){
 		if(!constructor)
 		{
-	this.startx=Math.random()*windowx>>0;
-	this.starty=Math.random()*windowy>>0;
+	this.startx=canvasw/2;//Math.random()*canvasw>>0;
+	this.starty=canvash/2;//Math.random()*canvash>>0;
 	//this.linelength=Math.random()*20+20;
 	this.angle=Math.random()*360;
 	this.arrayindex=arrayindex;
+	var r = Math.random()*255>>0;
+	var g = Math.random()*255>>0;
+	var b = Math.random()*255>>0;
+	var p = "rgba("+r+", "+g+", "+b+", 1)";
+	this.linecolor=p;
 	}
 	else
 	{
@@ -60,36 +121,38 @@ var line=Class.extend({
 		//this.linelength=constructor.linelength;
 		if(constructor.angle)
 		this.angle=constructor.angle;
+		this.linecolor=constructor.linecolor;
 	}
-	var that=this;
-	this.interval=setInterval(function(){that.animate()},25);
+	//this.interval=setInterval(function(){that.animate()},25);
 	//
   //	alert("sdf");
 	},
   
-	 animate:function(){
+	 draw:function(){
 	//alert(this.starty);
 	//ctx.clearRect(0,0,canvas.width,canvas.height);
-    console.log(this.startx,this.starty,this.length,this.angle,this.angle/180*$pi,this.arrayindex);
+    //console.log(this.startx,this.starty,this.length,this.angle,this.angle/180*$pi,this.arrayindex);
 	var end;
 	if(this.endreached)
 	{
 		this.startx+=cos(this.angle)*this.speed;
 		this.starty-=sin(this.angle)*this.speed;
 		this.linelength-=this.speed;
-		end=drawline(this.startx,this.starty,this.linelength,this.angle);
+		end=drawline(this.startx,this.starty,this.linelength,this.angle,this.linecolor);
 	}
 	else if(this.linelength>this.maxlength)
 	{
 		this.startx+=cos(this.angle)*this.speed;
 		this.starty-=sin(this.angle)*this.speed;
-		end=drawline(this.startx,this.starty,this.maxlength,this.angle);
+		end=drawline(this.startx,this.starty,this.maxlength,this.angle,this.linecolor);
 	}
 	else
 	{
 		this.linelength+=this.speed;
-		end=drawline(this.startx,this.starty,this.linelength,this.angle);
+		end=drawline(this.startx,this.starty,this.linelength,this.angle,this.linecolor);
 	}
+	this.endx=end.x;
+	this.endy=end.y;
 	var endstate=endcondition(end.x,end.y);
 	if(endstate && this.endreached==false)
 	{
@@ -99,7 +162,8 @@ var line=Class.extend({
 		var constructor={
 			startx:end.x,
 			starty:end.y,
-			angle:180-this.angle
+			angle:180-this.angle,
+			linecolor:this.linecolor
 		}
 	}
 		else if(endstate==2)
@@ -107,16 +171,29 @@ var line=Class.extend({
 			var constructor={
 			startx:end.x,
 			starty:end.y,
-			angle:360-this.angle
+			angle:360-this.angle,
+			linecolor:this.linecolor
 		}
+		}
+		else if(endstate==3)
+		{
+			var tangentangle=Math.atan2(end.x,end.y)/$pi*180;
+			var constructor=
+			{
+				startx:end.x,
+			starty:end.y,
+			angle:2*tangentangle-this.angle,
+			linecolor:this.linecolor
+			}
 		}
 		var line1=new line(constructor,this.arrayindex);
+		lineobjects.push(line1);
+		//console.log(getindex(line1));
 		//console.log("*****"+this.arrayindex);
 	}
 	if(endstate==endcondition(this.startx,this.starty) && this.endreached==true)
 	{
-		clearInterval(this.interval);
-		
+		lineobjects.splice(getindex(this),1);
 		/*var constructor={
 			startx:this.startx,
 			starty:this.starty,
@@ -129,16 +206,62 @@ var line=Class.extend({
 	}
 }
 })
+var animate=function()
+{
+	requestAnimFrame(animate);
+	//\ctx.clearRect(0,0,canvas.width,canvas.height);
+	//ctx.globalCompositeOperation = 'destination-out';
+	// decrease the alpha property to create more prominent trails
+	ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+	ctx.fillRect( 0, 0, canvasw, canvash );
+	// change the composite operation back to our main mode
+	// lighter creates bright highlight points as the fireworks and particles overlap each other
+	//ctx.globalCompositeOperation = 'lighter';
+		//ctx.globalCompositeOperation = "lighter";
+		
+
+		for(var i in lineobjects)
+		{
+			lineobjects[i].draw();
+		}
+}
+$('body').click(function(e){
+	//alert("dsf");
+	for(var i in lineobjects)
+		{
+			k=lineobjects[i];
+			
+			if(!k.endreached)
+			{
+				newangle=(Math.atan2((k.starty-e.pageY),(e.pageX-k.startx))/$pi*180);
+			console.log(newangle);
+				k.changeangle(newangle);
+			}
+		}
+})
+/*$('body').mousedown(function(e){
+	//alert("dsf");
+	for(var i in lineobjects)
+		{
+			k=lineobjects[i];
+			
+			if(!k.endreached)
+			{
+				newangle=(Math.random()*360);
+			console.log(newangle);
+				k.changeangle(newangle);
+			}
+		}
+})*/
 var gameloop=function()
 {
-	setInterval(function()
-	{
-		ctx.clearRect(0,0,canvas.width,canvas.height);
-	},50)
-for(i=0;i<50;i++)
+for(i=0;i<600;i++)
 {
- lineobjects[i]=new line(null,i);
+ var line1=new line(null,i);
+ lineobjects.push(line1);
 }
+ctx.lineWidth=5;
+	requestAnimFrame(animate);
 }
 gameloop();
 /*ctx.beginPath();
